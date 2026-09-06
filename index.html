@@ -76,6 +76,10 @@ body.has-bg-image table{background:color-mix(in srgb, var(--cream) 88%, transpar
 .checklist .del-x:hover{background:#f3dede;color:#a44}
 .pill-del{display:inline-flex;align-items:center;gap:6px}
 .pill-del button{background:transparent;border:0;color:#a44;font-size:12px;padding:0;cursor:pointer}
+.pill-del .pill-text{cursor:pointer}
+.pill-del .pill-text:hover{text-decoration:underline}
+.mini-link{font-size:11px;color:var(--accent);cursor:pointer;text-decoration:underline;margin-right:2px}
+.mini-link:hover{opacity:.7}
 
 /* --- review modal --- */
 .modal-overlay{display:none;position:fixed;inset:0;background:rgba(20,18,15,.55);z-index:50;align-items:center;justify-content:center;padding:24px}
@@ -423,20 +427,20 @@ Climate COP..."></textarea><button class="btn" onclick="addGK()">Add topics</but
 <section class="page" id="personal">
 <div class="eyebrow">The inner record</div><h2>Personal</h2>
 <div class="grid two">
-<div class="card dark"><div class="eyebrow" style="color:#d4a55d">Daily courage log</div><div class="prompt">What scared you today—but you did anyway?</div><textarea data-note="courage" placeholder="The thing I almost avoided..."></textarea></div>
-<div class="card"><div class="eyebrow">Today's journal door</div><div class="prompt" id="journalPrompt">What would today's version of you thank tomorrow's version for doing?</div><textarea data-note="journalAnswer" placeholder="Be embarrassingly honest. Nobody else is reading."></textarea></div>
+<div class="card dark"><div class="eyebrow" style="color:#d4a55d">Daily courage log</div><div class="prompt">What scared you today—but you did anyway?</div><textarea data-personal="courage" placeholder="The thing I almost avoided..."></textarea><button class="btn light" style="margin-top:8px;border-color:#585550;color:#eee9df" data-personal-save="courage" onclick="savePersonalEntry('courage')">Log entry</button><details class="gk-details" style="margin-top:10px"><summary>Past entries</summary><div class="scroll" style="max-height:220px;overflow:auto" data-personal-log="courage"></div></details></div>
+<div class="card"><div class="eyebrow">Today's journal door</div><div class="prompt" id="journalPrompt">What would today's version of you thank tomorrow's version for doing?</div><textarea data-personal="journalAnswer" placeholder="Be embarrassingly honest. Nobody else is reading."></textarea><button class="btn light" style="margin-top:8px" data-personal-save="journalAnswer" onclick="savePersonalEntry('journalAnswer')">Log entry</button><details class="gk-details" style="margin-top:10px"><summary>Past entries</summary><div class="scroll" style="max-height:220px;overflow:auto" data-personal-log="journalAnswer"></div></details></div>
 </div>
 <div class="grid two" style="margin-top:18px">
-<div class="card"><div class="eyebrow">Gratitude</div><div class="prompt">Three things, small or big, you were grateful for today.</div><textarea data-note="gratitude" placeholder="1. …
+<div class="card"><div class="eyebrow">Gratitude</div><div class="prompt">Three things, small or big, you were grateful for today.</div><textarea data-personal="gratitude" placeholder="1. …
 2. …
-3. …"></textarea></div>
+3. …"></textarea><button class="btn light" style="margin-top:8px" data-personal-save="gratitude" onclick="savePersonalEntry('gratitude')">Log entry</button><details class="gk-details" style="margin-top:10px"><summary>Past entries</summary><div class="scroll" style="max-height:220px;overflow:auto" data-personal-log="gratitude"></div></details></div>
 </div>
 <div class="grid two" style="margin-top:18px">
 <div class="card"><h3>Challenges I'm facing</h3><div class="item-row"><input id="challengeInput" placeholder="Name the monster clearly"><button class="btn" onclick="addItem(&#39;challenge&#39;)">Add</button></div><div id="challengeList"></div></div>
 <div class="card"><h3>Things I've conquered</h3><div class="item-row"><input id="conquerInput" placeholder="Give yourself evidence"><button class="btn" onclick="addItem(&#39;conquer&#39;)">Add</button></div><div id="conquerList"></div></div>
 </div>
 <div class="grid two" style="margin-top:18px">
-<div class="card"><h3>Manifestation Corner</h3><div class="prompt" id="manifestPrompt">What does your future self protect fiercely? Time, attention, curiosity, peace? Why?</div><textarea data-note="manifestation" placeholder="Write as the person becoming this future—not begging for it."></textarea></div>
+<div class="card"><h3>Manifestation Corner</h3><div class="prompt" id="manifestPrompt">What does your future self protect fiercely? Time, attention, curiosity, peace? Why?</div><textarea data-personal="manifestation" placeholder="Write as the person becoming this future—not begging for it."></textarea><button class="btn light" style="margin-top:8px" data-personal-save="manifestation" onclick="savePersonalEntry('manifestation')">Log entry</button><details class="gk-details" style="margin-top:10px"><summary>Past entries</summary><div class="scroll" style="max-height:220px;overflow:auto" data-personal-log="manifestation"></div></details></div>
 <div class="card"><h3>Habits &amp; rituals</h3><p class="small">Add habits you want to return to. Tick them all off before the day resets to keep the streak alive.</p><div class="item-row"><input id="habitInput" placeholder="A habit / ritual"><button class="btn" onclick="addHabit()">Add</button></div><ul class="checklist" id="habitList"></ul><p class="small" style="margin-top:10px">🔥 <b id="habitStreakNum">0</b> day streak</p></div>
 </div>
 </section>
@@ -453,10 +457,10 @@ Climate COP..."></textarea><button class="btn" onclick="addGK()">Add topics</but
 <input id="dwPromptInput" placeholder="e.g. What am I avoiding right now?">
 <span class="label" style="margin-top:10px;display:block">Your answer</span>
 <textarea id="dwAnswerInput" placeholder="Write..."></textarea>
-<button class="btn accent" style="margin-top:8px" onclick="saveDailyWrite()">Log entry</button>
+<button class="btn accent" id="dwSaveBtn" style="margin-top:8px" onclick="saveDailyWrite()">Log entry</button>
 </div>
 <div class="section-head" style="margin-top:18px"><h3>Past entries</h3></div>
-<div id="dwLog"></div>
+<div id="dwLog" class="scroll" style="max-height:340px;overflow:auto"></div>
 </section>
 
 <section class="page" id="sidequests">
@@ -809,14 +813,47 @@ function renderCultureQuiz(){
 }
 
 /* ---------- daily question answer log ---------- */
+let questionEditId=null;
 function saveQAnswer(){
   let ans=qAnswerInput.value.trim();
   let src=document.getElementById('qSourcesInput').value.trim();
   if(!ans&&!src)return;
   state.questionLog=state.questionLog||[];
-  state.questionLog.unshift({date:todayStr(),question:dailyPrompt.textContent,answer:ans,sources:src});
+  if(questionEditId){
+    let entry=state.questionLog.find(x=>x.id===questionEditId);
+    if(entry){entry.answer=ans;entry.sources=src}
+    questionEditId=null;
+  }else{
+    state.questionLog.unshift({id:uid(),date:todayStr(),question:dailyPrompt.textContent,answer:ans,sources:src});
+  }
   qAnswerInput.value='';document.getElementById('qSourcesInput').value='';save();renderCombinedLog();
   document.getElementById('qLogCount').textContent=state.questionLog.length;
+}
+function editQuestionEntry(id){
+  let entry=(state.questionLog||[]).find(x=>x.id===id);
+  if(!entry)return;
+  qAnswerInput.value=entry.answer||'';
+  document.getElementById('qSourcesInput').value=entry.sources||'';
+  questionEditId=id;
+  qAnswerInput.focus();
+}
+function deleteQuestionEntry(id){
+  state.questionLog=(state.questionLog||[]).filter(x=>x.id!==id);
+  if(questionEditId===id)questionEditId=null;
+  save();renderCombinedLog();
+  document.getElementById('qLogCount').textContent=state.questionLog.length;
+}
+function editCultureLogEntry(id){
+  let entry=(state.cultureLog||[]).find(x=>x.id===id);
+  if(!entry)return;
+  let offset=Math.round((new Date(todayStr())-new Date(entry.date))/86400000);
+  cultureViewOffset=Math.max(0,offset||0);
+  renderCultureCard();
+  let ta=document.getElementById('cultureNotesInput');if(ta)ta.focus();
+}
+function deleteCultureLogEntry(id){
+  state.cultureLog=(state.cultureLog||[]).filter(x=>x.id!==id);
+  save();renderCultureCard();
 }
 /* Real <a target="_blank"> links (not JS-triggered window.open) so the browser treats these as a normal
    link click — no popup-blocker prompt, no "leaving site" interstitial after the first natural visit.
@@ -825,10 +862,12 @@ function geminiUrl(q){return `https://www.google.com/search?udm=50&q=${encodeURI
 function setGeminiLink(elId,question){let el=document.getElementById(elId);if(el)el.href=geminiUrl(question)}
 function renderCombinedLog(){
   state.questionLog=state.questionLog||[];state.cultureLog=state.cultureLog||[];
+  state.questionLog.forEach(x=>{if(!x.id)x.id=uid()});
+  state.cultureLog.forEach(x=>{if(!x.id)x.id=uid()});
   document.getElementById('qLogCount').textContent=state.questionLog.length;
   let items=[];
-  state.questionLog.forEach(x=>items.push({date:x.date,html:`<div style="margin-bottom:10px"><span class="pill">Q&amp;A</span> <b>${esc(x.date)}</b><br><span class="small">${esc(x.question)}</span>${x.answer?`<p style="margin:4px 0 0;font-size:12px">${esc(x.answer)}</p>`:''}${x.sources?`<p style="margin:4px 0 0;font-size:11px;color:#8a8578"><i>Notes/sources:</i> ${esc(x.sources)}</p>`:''}</div>`}));
-  state.cultureLog.forEach(x=>items.push({date:x.date,html:`<div style="margin-bottom:10px"><span class="pill">Culture</span> <b>${esc(x.date)}</b> — ${esc(x.topic)} ${x.learned?'✅':'—'}${x.notes?`<p style="margin:4px 0 0;font-size:11px;color:#8a8578">${esc(x.notes)}</p>`:''}</div>`}));
+  state.questionLog.forEach(x=>items.push({date:x.date,html:`<div style="margin-bottom:10px"><span class="pill">Q&amp;A</span> <b>${esc(x.date)}</b><br><span class="small">${esc(x.question)}</span>${x.answer?`<p style="margin:4px 0 0;font-size:12px">${esc(x.answer)}</p>`:''}${x.sources?`<p style="margin:4px 0 0;font-size:11px;color:#8a8578"><i>Notes/sources:</i> ${esc(x.sources)}</p>`:''}<div style="margin-top:4px"><span role="button" tabindex="0" class="mini-link" onclick="editQuestionEntry('${x.id}')">Edit</span><span role="button" tabindex="0" class="mini-link" onclick="deleteQuestionEntry('${x.id}')">Delete</span></div></div>`}));
+  state.cultureLog.forEach(x=>items.push({date:x.date,html:`<div style="margin-bottom:10px"><span class="pill">Culture</span> <b>${esc(x.date)}</b> — ${esc(x.topic)} ${x.learned?'✅':'—'}${x.notes?`<p style="margin:4px 0 0;font-size:11px;color:#8a8578">${esc(x.notes)}</p>`:''}<div style="margin-top:4px"><span role="button" tabindex="0" class="mini-link" onclick="editCultureLogEntry('${x.id}')">Edit</span><span role="button" tabindex="0" class="mini-link" onclick="deleteCultureLogEntry('${x.id}')">Delete</span></div></div>`}));
   items.sort((a,b)=>a.date<b.date?1:-1);
   document.getElementById('qCultureLog').innerHTML=items.length?items.slice(0,40).map(x=>x.html).join(''):'<p class="empty">Nothing logged yet.</p>';
 }
@@ -1012,7 +1051,17 @@ document.querySelectorAll('[data-cur]').forEach(x=>{x.value=(state.currentlyNote
 
 
 function addItem(type){let inp=document.getElementById(type+'Input');if(!inp.value.trim())return;arr(type+'s').push({id:uid(),text:inp.value});inp.value='';save();renderItems()}
-function renderItems(){['challenge','conquer'].forEach(type=>{let list=state[type+'s']||[];document.getElementById(type+'List').innerHTML=list.map(x=>`<span class="pill pill-del">${esc(x.text)}<button onclick="deleteItem('${type}','${x.id}')" title="Delete">✕</button></span>`).join('')})}
+function renderItems(){['challenge','conquer'].forEach(type=>{let list=state[type+'s']||[];document.getElementById(type+'List').innerHTML=list.map(x=>`<span class="pill pill-del"><span role="button" tabindex="0" class="pill-text" onclick="editItem('${type}','${x.id}')" title="Click to edit">${esc(x.text)}</span><button onclick="deleteItem('${type}','${x.id}')" title="Delete">✕</button></span>`).join('')})}
+function editItem(type,id){
+  let list=state[type+'s']||[];
+  let item=list.find(x=>x.id==id);
+  if(!item)return;
+  let updated=prompt('Edit:',item.text);
+  if(updated===null)return;
+  updated=updated.trim();
+  if(!updated){deleteItem(type,id);return}
+  item.text=updated;save();renderItems();
+}
 function deleteItem(type,id){state[type+'s']=(state[type+'s']||[]).filter(x=>x.id!=id);save();renderItems()}
 function addHabit(){if(!habitInput.value.trim())return;arr('habits').push({id:uid(),text:habitInput.value,done:false});habitInput.value='';save();renderHabits()}
 function ensureHabitsDailyReset(){
@@ -1044,23 +1093,54 @@ function computeHabitStreak(){
 }
 function renderHabits(){
   ensureHabitsDailyReset();
-  habitList.innerHTML=(state.habits||[]).map(x=>`<li><input type="checkbox" ${x.done?'checked':''} onchange="toggleHabit('${x.id}',this.checked)"><span>${esc(x.text)}</span><button class="del-x" onclick="deleteHabit('${x.id}')" title="Delete">✕</button></li>`).join('');
+  habitList.innerHTML=(state.habits||[]).map(x=>`<li><input type="checkbox" ${x.done?'checked':''} onchange="toggleHabit('${x.id}',this.checked)"><span role="button" tabindex="0" onclick="editHabit('${x.id}')" title="Click to edit">${esc(x.text)}</span><button class="del-x" onclick="deleteHabit('${x.id}')" title="Delete">✕</button></li>`).join('');
   let el=document.getElementById('habitStreakNum');if(el)el.textContent=computeHabitStreak();
+}
+function editHabit(id){
+  let item=(state.habits||[]).find(x=>x.id==id);
+  if(!item)return;
+  let updated=prompt('Edit habit:',item.text);
+  if(updated===null)return;
+  updated=updated.trim();
+  if(!updated){deleteHabit(id);return}
+  item.text=updated;save();renderHabits();
 }
 function toggleHabit(id,v){state.habits.find(x=>x.id==id).done=v;maybeRecordHabitStreak();save();renderHabits()}
 function deleteHabit(id){state.habits=(state.habits||[]).filter(x=>x.id!=id);save();renderHabits()}
 
 /* ---------- daily write (your own prompt, every day) ---------- */
+let dwEditId=null;
 function saveDailyWrite(){
   let prompt=document.getElementById('dwPromptInput').value.trim();
   let ans=document.getElementById('dwAnswerInput').value.trim();
   if(!prompt||!ans)return;
   state.dailyWriteLog=state.dailyWriteLog||[];
-  state.dailyWriteLog.unshift({id:uid(),date:todayStr(),prompt,text:ans});
+  if(dwEditId){
+    let entry=state.dailyWriteLog.find(x=>x.id===dwEditId);
+    if(entry){entry.prompt=prompt;entry.text=ans}
+    dwEditId=null;
+  }else{
+    state.dailyWriteLog.unshift({id:uid(),date:todayStr(),prompt,text:ans});
+    state.dwStreakDates=state.dwStreakDates||[];
+    if(!state.dwStreakDates.includes(todayStr()))state.dwStreakDates.push(todayStr());
+  }
   document.getElementById('dwPromptInput').value='';
   document.getElementById('dwAnswerInput').value='';
-  state.dwStreakDates=state.dwStreakDates||[];
-  if(!state.dwStreakDates.includes(todayStr()))state.dwStreakDates.push(todayStr());
+  let btn=document.getElementById('dwSaveBtn');if(btn)btn.textContent='Log entry';
+  save();renderDailyWrite();
+}
+function editDailyWrite(id){
+  let entry=(state.dailyWriteLog||[]).find(x=>x.id===id);
+  if(!entry)return;
+  document.getElementById('dwPromptInput').value=entry.prompt;
+  document.getElementById('dwAnswerInput').value=entry.text;
+  dwEditId=id;
+  let btn=document.getElementById('dwSaveBtn');if(btn)btn.textContent='Update entry';
+  document.getElementById('dwPromptInput').focus();
+}
+function deleteDailyWrite(id){
+  state.dailyWriteLog=(state.dailyWriteLog||[]).filter(x=>x.id!==id);
+  if(dwEditId===id)dwEditId=null;
   save();renderDailyWrite();
 }
 function computeDwStreak(){
@@ -1074,7 +1154,7 @@ function renderDailyWrite(){
   let sEl=document.getElementById('dwStreakNum');if(sEl)sEl.textContent=computeDwStreak();
   let logEl=document.getElementById('dwLog');
   if(!logEl)return;
-  logEl.innerHTML=log.length?log.map(x=>`<details class="gk-details" style="margin-bottom:8px"><summary>${x.date} — ${esc(x.prompt)}</summary><p style="white-space:pre-wrap;margin:8px 0 0">${esc(x.text)}</p></details>`).join(''):'<p class="empty">Nothing logged yet — write your first entry above.</p>';
+  logEl.innerHTML=log.length?log.map(x=>`<details class="gk-details" style="margin-bottom:8px"><summary>${x.date} — ${esc(x.prompt)}</summary><p style="white-space:pre-wrap;margin:8px 0 0">${esc(x.text)}</p><div style="margin-top:6px;display:flex;gap:10px"><span role="button" tabindex="0" class="mini-link" onclick="editDailyWrite('${x.id}')">Edit</span><span role="button" tabindex="0" class="mini-link" onclick="deleteDailyWrite('${x.id}')">Delete</span></div></details>`).join(''):'<p class="empty">Nothing logged yet — write your first entry above.</p>';
 }
 function addQuest(){if(!questInput.value.trim())return;arr('quests').push({id:uid(),text:questInput.value,done:false});questInput.value='';save();renderQuests()}
 function renderQuests(){questList.innerHTML=(state.quests||[]).map(x=>`<li><input type="checkbox" ${x.done?'checked':''} onchange="toggleQuest('${x.id}',this.checked)"><span>${esc(x.text)}</span><button class="del-x" onclick="deleteQuest('${x.id}')" title="Delete">✕</button></li>`).join('')}
@@ -1119,6 +1199,58 @@ function renderHomeCurrently(){
 function saveQuick(){if(!quickCapture.value.trim())return;arr('ideas').unshift({id:uid(),title:'Quick capture',body:quickCapture.value});quickCapture.value='';save();renderIdeas()}
 
 document.querySelectorAll('[data-note]').forEach(x=>{x.value=(state.notes||{})[x.dataset.note]||'';x.oninput=()=>{state.notes=state.notes||{};state.notes[x.dataset.note]=x.value;save()}})
+
+/* ---------- personal reflections: dated, editable, deletable logs (courage / journal / gratitude / manifestation) ---------- */
+function personalLogArr(key){state.personalLogs=state.personalLogs||{};return state.personalLogs[key]||(state.personalLogs[key]=[])}
+let personalEditing={};
+function migrateOldPersonalNote(key){
+  let old=(state.notes||{})[key];
+  let list=personalLogArr(key);
+  if(old&&old.trim()&&!list.length){
+    list.push({id:uid(),date:'Earlier (migrated)',text:old});
+    delete state.notes[key];
+    save();
+  }
+}
+function savePersonalEntry(key){
+  let ta=document.querySelector(`textarea[data-personal="${key}"]`);
+  let text=ta.value.trim();
+  if(!text)return;
+  let list=personalLogArr(key);
+  let editId=personalEditing[key];
+  if(editId){
+    let entry=list.find(x=>x.id===editId);
+    if(entry)entry.text=text;
+    personalEditing[key]=null;
+  }else{
+    list.unshift({id:uid(),date:todayStr(),text});
+  }
+  ta.value='';
+  let btn=document.querySelector(`button[data-personal-save="${key}"]`);
+  if(btn)btn.textContent='Log entry';
+  save();renderPersonalLog(key);
+}
+function editPersonalEntry(key,id){
+  let entry=personalLogArr(key).find(x=>x.id===id);
+  if(!entry)return;
+  let ta=document.querySelector(`textarea[data-personal="${key}"]`);
+  ta.value=entry.text;ta.focus();
+  personalEditing[key]=id;
+  let btn=document.querySelector(`button[data-personal-save="${key}"]`);
+  if(btn)btn.textContent='Update entry';
+}
+function deletePersonalEntry(key,id){
+  state.personalLogs[key]=(state.personalLogs[key]||[]).filter(x=>x.id!==id);
+  if(personalEditing[key]===id)personalEditing[key]=null;
+  save();renderPersonalLog(key);
+}
+function renderPersonalLog(key){
+  let list=personalLogArr(key);
+  let el=document.querySelector(`[data-personal-log="${key}"]`);
+  if(!el)return;
+  el.innerHTML=list.length?list.map(x=>`<details class="gk-details" style="margin-bottom:6px"><summary>${esc(x.date)}</summary><p style="white-space:pre-wrap;margin:6px 0">${esc(x.text)}</p><div style="display:flex;gap:10px"><span role="button" tabindex="0" class="mini-link" onclick="editPersonalEntry('${key}','${x.id}')">Edit</span><span role="button" tabindex="0" class="mini-link" onclick="deletePersonalEntry('${key}','${x.id}')">Delete</span></div></details>`).join(''):'<p class="empty">Nothing logged yet.</p>';
+}
+['courage','journalAnswer','gratitude','manifestation'].forEach(k=>{migrateOldPersonalNote(k);renderPersonalLog(k)});
 let cal=new Date();function renderCalendar(){monthTitle.textContent=cal.toLocaleDateString('en-US',{month:'long',year:'numeric'});let first=new Date(cal.getFullYear(),cal.getMonth(),1), days=new Date(cal.getFullYear(),cal.getMonth()+1,0).getDate();calendarGrid.innerHTML=['Sun','Mon','Tue','Wed','Thu','Fri','Sat'].map(x=>`<div class="small" style="text-align:center">${x}</div>`).join('');for(let i=0;i<first.getDay();i++)calendarGrid.innerHTML+='<div></div>';for(let n=1;n<=days;n++){let today=new Date(), cls=(today.getFullYear()==cal.getFullYear()&&today.getMonth()==cal.getMonth()&&today.getDate()==n)?'day today':'day';calendarGrid.innerHTML+=`<div class="${cls}"><b>${n}</b></div>`}}
 function changeMonth(n){cal.setMonth(cal.getMonth()+n);renderCalendar()}
 

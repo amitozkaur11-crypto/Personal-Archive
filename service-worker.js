@@ -1,6 +1,6 @@
 // Amitoj — The Personal Archive: offline cache
 // Bump CACHE_NAME whenever index.html changes so old installs pick up the update.
-const CACHE_NAME = 'personal-archive-v1';
+const CACHE_NAME = 'personal-archive-v2';
 const ASSETS = [
   './',
   './index.html',
