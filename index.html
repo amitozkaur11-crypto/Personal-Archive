@@ -78,8 +78,10 @@ body.has-bg-image table{background:color-mix(in srgb, var(--cream) 88%, transpar
 .pill-del button{background:transparent;border:0;color:#a44;font-size:12px;padding:0;cursor:pointer}
 .pill-del .pill-text{cursor:pointer}
 .pill-del .pill-text:hover{text-decoration:underline}
-.mini-link{font-size:11px;color:var(--accent);cursor:pointer;text-decoration:underline;margin-right:2px}
-.mini-link:hover{opacity:.7}
+.log-row{cursor:pointer;padding:9px 12px;border-radius:8px;margin-bottom:6px;border:1px solid var(--line);font-size:13px}
+.log-row:hover{background:#faf6ee;border-color:var(--accent)}
+.card.dark .log-row{border-color:#45433f;color:#eee9df}
+.card.dark .log-row:hover{background:#2a2926}
 
 /* --- review modal --- */
 .modal-overlay{display:none;position:fixed;inset:0;background:rgba(20,18,15,.55);z-index:50;align-items:center;justify-content:center;padding:24px}
@@ -866,10 +868,27 @@ function renderCombinedLog(){
   state.cultureLog.forEach(x=>{if(!x.id)x.id=uid()});
   document.getElementById('qLogCount').textContent=state.questionLog.length;
   let items=[];
-  state.questionLog.forEach(x=>items.push({date:x.date,html:`<div style="margin-bottom:10px"><span class="pill">Q&amp;A</span> <b>${esc(x.date)}</b><br><span class="small">${esc(x.question)}</span>${x.answer?`<p style="margin:4px 0 0;font-size:12px">${esc(x.answer)}</p>`:''}${x.sources?`<p style="margin:4px 0 0;font-size:11px;color:#8a8578"><i>Notes/sources:</i> ${esc(x.sources)}</p>`:''}<div style="margin-top:4px"><span role="button" tabindex="0" class="mini-link" onclick="editQuestionEntry('${x.id}')">Edit</span><span role="button" tabindex="0" class="mini-link" onclick="deleteQuestionEntry('${x.id}')">Delete</span></div></div>`}));
-  state.cultureLog.forEach(x=>items.push({date:x.date,html:`<div style="margin-bottom:10px"><span class="pill">Culture</span> <b>${esc(x.date)}</b> — ${esc(x.topic)} ${x.learned?'✅':'—'}${x.notes?`<p style="margin:4px 0 0;font-size:11px;color:#8a8578">${esc(x.notes)}</p>`:''}<div style="margin-top:4px"><span role="button" tabindex="0" class="mini-link" onclick="editCultureLogEntry('${x.id}')">Edit</span><span role="button" tabindex="0" class="mini-link" onclick="deleteCultureLogEntry('${x.id}')">Delete</span></div></div>`}));
+  state.questionLog.forEach(x=>items.push({date:x.date,html:`<div class="log-row" role="button" tabindex="0" onclick="openQuestionModal('${x.id}')"><span class="pill">Q&amp;A</span> <b>${esc(x.date)}</b> — ${esc(x.question)}</div>`}));
+  state.cultureLog.forEach(x=>items.push({date:x.date,html:`<div class="log-row" role="button" tabindex="0" onclick="openCultureLogModal('${x.id}')"><span class="pill">Culture</span> <b>${esc(x.date)}</b> — ${esc(x.topic)} ${x.learned?'✅':''}</div>`}));
   items.sort((a,b)=>a.date<b.date?1:-1);
   document.getElementById('qCultureLog').innerHTML=items.length?items.slice(0,40).map(x=>x.html).join(''):'<p class="empty">Nothing logged yet.</p>';
+}
+function openQuestionModal(id){
+  let x=(state.questionLog||[]).find(e=>e.id===id);
+  if(!x)return;
+  let body=`<span class="pill">Q&amp;A</span><h2 style="margin:12px 0 4px">${esc(x.question)}</h2><p class="small">${esc(x.date)}</p>
+<p style="margin-top:14px">${esc(x.answer||'—')}</p>
+${x.sources?`<h4>Notes / sources</h4><p>${esc(x.sources)}</p>`:''}
+<div style="margin-top:18px;display:flex;gap:10px"><button class="btn light" onclick="closeReviewModal();editQuestionEntry('${x.id}')">Edit</button><button class="btn light" onclick="deleteQuestionEntry('${x.id}');closeReviewModal()">Delete</button></div>`;
+  reviewModalBody.innerHTML=body;reviewModal.classList.add('open');
+}
+function openCultureLogModal(id){
+  let x=(state.cultureLog||[]).find(e=>e.id===id);
+  if(!x)return;
+  let body=`<span class="pill">Culture</span><h2 style="margin:12px 0 4px">${esc(x.topic)}</h2><p class="small">${esc(x.date)} ${x.learned?'· ✅ Learned':''}</p>
+<p style="margin-top:14px">${esc(x.notes||'(no notes)')}</p>
+<div style="margin-top:18px;display:flex;gap:10px"><button class="btn light" onclick="closeReviewModal();editCultureLogEntry('${x.id}')">Edit</button><button class="btn light" onclick="deleteCultureLogEntry('${x.id}');closeReviewModal()">Delete</button></div>`;
+  reviewModalBody.innerHTML=body;reviewModal.classList.add('open');
 }
 document.getElementById('cultureLearnedBox').addEventListener('change',saveCultureEntry);
 renderCultureCard();
@@ -1154,7 +1173,15 @@ function renderDailyWrite(){
   let sEl=document.getElementById('dwStreakNum');if(sEl)sEl.textContent=computeDwStreak();
   let logEl=document.getElementById('dwLog');
   if(!logEl)return;
-  logEl.innerHTML=log.length?log.map(x=>`<details class="gk-details" style="margin-bottom:8px"><summary>${x.date} — ${esc(x.prompt)}</summary><p style="white-space:pre-wrap;margin:8px 0 0">${esc(x.text)}</p><div style="margin-top:6px;display:flex;gap:10px"><span role="button" tabindex="0" class="mini-link" onclick="editDailyWrite('${x.id}')">Edit</span><span role="button" tabindex="0" class="mini-link" onclick="deleteDailyWrite('${x.id}')">Delete</span></div></details>`).join(''):'<p class="empty">Nothing logged yet — write your first entry above.</p>';
+  logEl.innerHTML=log.length?log.map(x=>`<div class="log-row" role="button" tabindex="0" onclick="openDailyWriteModal('${x.id}')"><b>${esc(x.date)}</b> — ${esc(x.prompt)}</div>`).join(''):'<p class="empty">Nothing logged yet — write your first entry above.</p>';
+}
+function openDailyWriteModal(id){
+  let x=(state.dailyWriteLog||[]).find(e=>e.id===id);
+  if(!x)return;
+  let body=`<span class="pill">Daily Write</span><h2 style="margin:12px 0 4px">${esc(x.prompt)}</h2><p class="small">${esc(x.date)}</p>
+<p style="margin-top:14px">${esc(x.text)}</p>
+<div style="margin-top:18px;display:flex;gap:10px"><button class="btn light" onclick="closeReviewModal();editDailyWrite('${x.id}')">Edit</button><button class="btn light" onclick="deleteDailyWrite('${x.id}');closeReviewModal()">Delete</button></div>`;
+  reviewModalBody.innerHTML=body;reviewModal.classList.add('open');
 }
 function addQuest(){if(!questInput.value.trim())return;arr('quests').push({id:uid(),text:questInput.value,done:false});questInput.value='';save();renderQuests()}
 function renderQuests(){questList.innerHTML=(state.quests||[]).map(x=>`<li><input type="checkbox" ${x.done?'checked':''} onchange="toggleQuest('${x.id}',this.checked)"><span>${esc(x.text)}</span><button class="del-x" onclick="deleteQuest('${x.id}')" title="Delete">✕</button></li>`).join('')}
@@ -1244,11 +1271,20 @@ function deletePersonalEntry(key,id){
   if(personalEditing[key]===id)personalEditing[key]=null;
   save();renderPersonalLog(key);
 }
+const personalLogLabels={courage:'Daily courage log',journalAnswer:"Today's journal door",gratitude:'Gratitude',manifestation:'Manifestation Corner'};
 function renderPersonalLog(key){
   let list=personalLogArr(key);
   let el=document.querySelector(`[data-personal-log="${key}"]`);
   if(!el)return;
-  el.innerHTML=list.length?list.map(x=>`<details class="gk-details" style="margin-bottom:6px"><summary>${esc(x.date)}</summary><p style="white-space:pre-wrap;margin:6px 0">${esc(x.text)}</p><div style="display:flex;gap:10px"><span role="button" tabindex="0" class="mini-link" onclick="editPersonalEntry('${key}','${x.id}')">Edit</span><span role="button" tabindex="0" class="mini-link" onclick="deletePersonalEntry('${key}','${x.id}')">Delete</span></div></details>`).join(''):'<p class="empty">Nothing logged yet.</p>';
+  el.innerHTML=list.length?list.map(x=>`<div class="log-row" role="button" tabindex="0" onclick="openPersonalModal('${key}','${x.id}')">${esc(x.date)}</div>`).join(''):'<p class="empty">Nothing logged yet.</p>';
+}
+function openPersonalModal(key,id){
+  let x=personalLogArr(key).find(e=>e.id===id);
+  if(!x)return;
+  let body=`<span class="pill">${esc(personalLogLabels[key]||'Personal')}</span><h2 style="margin:12px 0 4px">${esc(x.date)}</h2>
+<p style="margin-top:14px">${esc(x.text)}</p>
+<div style="margin-top:18px;display:flex;gap:10px"><button class="btn light" onclick="closeReviewModal();editPersonalEntry('${key}','${x.id}')">Edit</button><button class="btn light" onclick="deletePersonalEntry('${key}','${x.id}');closeReviewModal()">Delete</button></div>`;
+  reviewModalBody.innerHTML=body;reviewModal.classList.add('open');
 }
 ['courage','journalAnswer','gratitude','manifestation'].forEach(k=>{migrateOldPersonalNote(k);renderPersonalLog(k)});
 let cal=new Date();function renderCalendar(){monthTitle.textContent=cal.toLocaleDateString('en-US',{month:'long',year:'numeric'});let first=new Date(cal.getFullYear(),cal.getMonth(),1), days=new Date(cal.getFullYear(),cal.getMonth()+1,0).getDate();calendarGrid.innerHTML=['Sun','Mon','Tue','Wed','Thu','Fri','Sat'].map(x=>`<div class="small" style="text-align:center">${x}</div>`).join('');for(let i=0;i<first.getDay();i++)calendarGrid.innerHTML+='<div></div>';for(let n=1;n<=days;n++){let today=new Date(), cls=(today.getFullYear()==cal.getFullYear()&&today.getMonth()==cal.getMonth()&&today.getDate()==n)?'day today':'day';calendarGrid.innerHTML+=`<div class="${cls}"><b>${n}</b></div>`}}
